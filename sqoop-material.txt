@@ -1,0 +1,171 @@
+sqoop list-databases \
+  --connect "jdbc:mysql://ms.itversity.com:3306" \
+  --username retail_user \
+  --password itversity
+
+
+information_schema
+retail_db
+retail_export
+retail_results
+
+
+sqoop list-tables \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity  
+
+categories
+customers
+departments
+order_items
+order_items_nopk
+orders
+products  
+
+
+sqoop eval \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --query "select * from order_items"
+
+--------------------------------------------------------------------------------
+| order_item_id | order_item_order_id | order_item_product_id | order_item_quantity | order_item_subtotal | order_item_product_price |
+--------------------------------------------------------------------------------
+| 1           | 1           | 957         | 1    | 299.98       | 299.98       |
+| 2           | 2           | 1073        | 1    | 199.99       | 199.99       |
+| 3           | 2           | 502         | 5    | 250          | 50           |
+| 4           | 2           | 403         | 1    | 129.99       | 129.99       |
+| 5           | 4           | 897         | 2    | 49.98        | 24.99        |
+| 6           | 4           | 365         | 5    | 299.95       | 59.99        |
+| 7           | 4           | 502         | 3    | 150          | 50           |
+| 8           | 4           | 1014        | 4    | 199.92       | 49.98        |
+| 9           | 5           | 957         | 1    | 299.98       | 299.98       |
+| 10          | 5           | 365         | 5    | 299.95       | 59.99        |
+--------------------------------------------------------------------------------
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table order_items \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/order_items \
+  --num-mappers 1
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table order_items \
+  --delete-target-dir \
+  --as-avrodatafile \
+  --target-dir=/user/foxsermon/order_items \
+  --num-mappers 1
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table order_items \
+  --delete-target-dir \
+  --as-sequencefile \
+  --target-dir=/user/foxsermon/order_items \
+  --num-mappers 1
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table order_items \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/order_items \
+  --num-mappers 1 \
+  --where "order_item_product_price > 300" \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --columns "order_item_order_id,order_item_product_price"
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/orders \
+  --num-mappers 2 \
+  --boundary-query "select 1, 13 from orders"
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/orders \
+  --num-mappers 2 \
+  --boundary-query "select 1, 13 from orders" \
+  --where "order_status = 'COMPLETE'"
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/orders \
+  --num-mappers 2 \
+  --query "select * from orders WHERE \$CONDITIONS AND order_status in ('COMPLETE', 'CLOSED')" \
+  --split-by "order_id"
+
+
+sqoop import \
+  -Dorg.apache.sqoop.splitter.allow_text_splitter=true \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --delete-target-dir \
+  --as-textfile \
+  --target-dir=/user/foxsermon/orders \
+  --num-mappers 2 \
+  --query "select * from orders WHERE \$CONDITIONS AND order_status in ('COMPLETE', 'CLOSED')" \
+  --split-by "order_status"
+
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --delete-target-dir \
+  --as-avrodatafile \
+  --target-dir=/user/foxsermon/problem1/orders \
+  --num-mappers 1 \
+  --compress \
+  --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table order_items \
+  --delete-target-dir \
+  --as-avrodatafile \
+  --target-dir=/user/foxsermon/problem1/order_items \
+  --num-mappers 1 \
+  --compress \
+  --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+
