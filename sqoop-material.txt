@@ -55,6 +55,14 @@ sqoop import \
   --target-dir=/user/foxsermon/order_items \
   --num-mappers 1
 
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --delete-target-dir \
+  --target-dir=/user/foxsermon/orders \
+  --num-mappers 1
 
 sqoop import \
   --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
