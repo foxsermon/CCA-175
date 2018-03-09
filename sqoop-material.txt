@@ -152,6 +152,8 @@ sqoop import \
 ****************************************************************************************************************************************
 ****************************************************************************************************************************************
 
+PROBLEM 1
+
 sqoop import \
   --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
   --username retail_user \
@@ -177,3 +179,52 @@ sqoop import \
   --compress \
   --compression-codec org.apache.hadoop.io.compress.SnappyCodec
 
+
+spark-submit --files /Users/serranm1/temp/miGIT/scalaPractice/ITVersityPractice/src/log4j.properties --conf "spark.executor.extraJavaOptions='-Dlog4j.configuration=log4j.properties'" --driver-java-options "-Dlog4j.configuration=file:/Users/serranm1/temp/miGIT/scalaPractice/ITVersityPractice/src/log4j.properties" ITversityPractice/OrderItemsProblem1.py
+
+
+Create dir in HDFS
+hadoop fs -mkdir /user/foxsermon/problem1/result
+
+Copy CVS from local to HDFS
+hadoop fs -put itVersity/problem1/dataFrameResult.cvs /user/foxsermon/problem1/result
+
+Export CVS file into MYSQL table
+sqoop export \
+--table itversity_problem1_result \
+--connect "jdbc:mysql://69.61.93.57:3306/retail_db" \
+--username root \
+-P  \
+--export-dir "/user/foxsermon/problem1/result/dataFrameResult.cvs" \
+--columns "order_date,order_status,total_amount,total_orders"
+
+
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+
+PROBLEM 2
+
+sqoop import \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --table products \
+  --delete-target-dir \
+  --target-dir=/user/foxsermon/problem2/products \
+  --num-mappers 1 \
+  --as-textfile \
+  --fields-terminated-by '|'
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+
+
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+
+
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+
+
+****************************************************************************************************************************************
+****************************************************************************************************************************************
