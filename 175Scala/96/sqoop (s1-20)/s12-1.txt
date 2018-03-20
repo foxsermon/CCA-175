@@ -1,0 +1,371 @@
+Problem Scenario 12 : You have been given following mysql database details as well as other info. 
+User=retail_dba 
+password=cloudera 
+database=retail_ db 
+jdbc URL = jdbc:mysql://quickstart:3306/retail_db 
+Please accomplish following. 
+
+1. Create a table in retail_export with following definition. 
+
+CREATE table departments_new (department_id int(11), department_name varchar(45), created_date  TIMESTAMP DEFAULT NOW());
+
+mysql> CREATE table departments_new1 (department_id int(11), department_name varchar(45), created_date  TIMESTAMP DEFAULT NOW());
+mysql> desc departments_new;
++-----------------+-------------+------+-----+-------------------+-------+
+| Field           | Type        | Null | Key | Default           | Extra |
++-----------------+-------------+------+-----+-------------------+-------+
+| department_id   | int(11)     | YES  |     | NULL              |       |
+| department_name | varchar(45) | YES  |     | NULL              |       |
+| created_date    | timestamp   | NO   |     | CURRENT_TIMESTAMP |       |
++-----------------+-------------+------+-----+-------------------+-------+
+3 rows in set (0.00 sec)
+
+
+mysql> create table dep_new(dep_id int, dep_name varchar(20), created_on timestamp default now());
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> desc dep_new;
++------------+-------------+------+-----+-------------------+-------+
+| Field      | Type        | Null | Key | Default           | Extra |
++------------+-------------+------+-----+-------------------+-------+
+| dep_id     | int(11)     | YES  |     | NULL              |       |
+| dep_name   | varchar(20) | YES  |     | NULL              |       |
+| created_on | timestamp   | NO   |     | CURRENT_TIMESTAMP |       |
++------------+-------------+------+-----+-------------------+-------+
+3 rows in set (0.00 sec)
+
+mysql>
+
+
+Note: why int is defaulted to int(11)?
+
+2. Now insert records from departments table to departments_new
+
+mysql> insert into departments_new1(department_id, department_name) select distinct * from departments order by department_id;
+
+
+mysql> select * from departments_new1;
++---------------+-----------------+---------------------+
+| department_id | department_name | created_date        |
++---------------+-----------------+---------------------+
+|             2 | Fitness         | 2018-02-25 18:28:34 |
+|             3 | Footwear        | 2018-02-25 18:28:34 |
+|             4 | Apparel         | 2018-02-25 18:28:34 |
+|             5 | Golf            | 2018-02-25 18:28:34 |
+|             6 | Outdoors        | 2018-02-25 18:28:34 |
+|             7 | Fan Shop        | 2018-02-25 18:28:34 |
+|            10 | gyshics         | 2018-02-25 18:28:34 |
+|            11 | chemistry       | 2018-02-25 18:28:34 |
+|            12 | math            | 2018-02-25 18:28:34 |
+|            13 | science         | 2018-02-25 18:28:34 |
+|            14 | engineering     | 2018-02-25 18:28:34 |
++---------------+-----------------+---------------------+
+11 rows in set (0.00 sec)
+
+ 
+3. Now import data (department_id < 10) from departments_new table to hdfs. 
+
+
+sqoop import -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_export \
+--username=retail_user \
+--password=itversity \
+--table=departments_new1 \
+--target-dir=departments_new1 \
+--where "department_id < 10"
+
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+[paslechoix@gw03 ~]$
+
+
+4. Insert following 5 records in departments_new1 table. 
+Insert into departments_new1 values(null, "Civil" , null); 
+Insert into departments_new1 values(111, null , null); 
+Insert into departments_new1 values(null, "Automobile" , null); 
+Insert into departments_new1 values(113, "Pharma" , null); 
+Insert into departments_new1 values(114, null , null);
+
+mysql> select * From departments_new1;
++---------------+-----------------+---------------------+
+| department_id | department_name | created_date        |
++---------------+-----------------+---------------------+
+|             2 | Fitness         | 2018-02-25 18:28:34 |
+|             3 | Footwear        | 2018-02-25 18:28:34 |
+|             4 | Apparel         | 2018-02-25 18:28:34 |
+|             5 | Golf            | 2018-02-25 18:28:34 |
+|             6 | Outdoors        | 2018-02-25 18:28:34 |
+|             7 | Fan Shop        | 2018-02-25 18:28:34 |
+|            10 | gyshics         | 2018-02-25 18:28:34 |
+|            11 | chemistry       | 2018-02-25 18:28:34 |
+|            12 | math            | 2018-02-25 18:28:34 |
+|            13 | science         | 2018-02-25 18:28:34 |
+|            14 | engineering     | 2018-02-25 18:28:34 |
+|          NULL | Civil           | 2018-02-25 18:37:14 |
+|           111 | NULL            | 2018-02-25 18:37:14 |
+|          NULL | Automobile      | 2018-02-25 18:37:14 |
+|           113 | Pharma          | 2018-02-25 18:37:14 |
+|           114 | NULL            | 2018-02-25 18:37:16 |
++---------------+-----------------+---------------------+
+16 rows in set (0.00 sec)
+
+mysql>
+
+5. Now, for all Null fields, if int, replaced with 999, if string, replace with "TBD", and import into hdfs
+
+
+sqoop import -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_export \
+--username=retail_user \
+--password=itversity \
+--table=departments_new1 \
+--null-string "TBD" \
+--null-non-string 999 \
+--check-column "department_id" \
+--incremental append 
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+10,gyshics,2018-02-25 18:28:34.0
+11,chemistry,2018-02-25 18:28:34.0
+12,math,2018-02-25 18:28:34.0
+13,science,2018-02-25 18:28:34.0
+14,engineering,2018-02-25 18:28:34.0
+111,TBD,2018-02-25 18:37:14.0
+113,Pharma,2018-02-25 18:37:14.0
+114,TBD,2018-02-25 18:37:16.0
+
+
+Note the rows with id is null are not imported, delete the departments_new1/part-m-00001 and do it again:
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+
+
+sqoop import -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_export \
+--username=retail_user \
+--password=itversity \
+--table=departments_new1 \
+--null-string "TBD" \
+--null-non-string "999" \
+--check-column "department_id" \
+--incremental append 
+
+
+Result:
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*                                                   2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+10,gyshics,2018-02-25 18:28:34.0
+11,chemistry,2018-02-25 18:28:34.0
+12,math,2018-02-25 18:28:34.0
+13,science,2018-02-25 18:28:34.0
+14,engineering,2018-02-25 18:28:34.0
+111,TBD,2018-02-25 18:37:14.0
+113,Pharma,2018-02-25 18:37:14.0
+114,TBD,2018-02-25 18:37:16.0
+
+
+Note: same as previous one, the records with id is null are not imported, is this caused by the --check-column?
+
+try again:
+
+1. modify the raw mysql table:
+
+ALTER TABLE departments_new1 ADD dep_id int;
+
+mysql> select * From departments_new1;
++---------------+-----------------+---------------------+--------+
+| department_id | department_name | created_date        | dep_id |
++---------------+-----------------+---------------------+--------+
+|             2 | Fitness         | 2018-02-25 18:28:34 |   NULL |
+|             3 | Footwear        | 2018-02-25 18:28:34 |   NULL |
+|             4 | Apparel         | 2018-02-25 18:28:34 |   NULL |
+|             5 | Golf            | 2018-02-25 18:28:34 |   NULL |
+|             6 | Outdoors        | 2018-02-25 18:28:34 |   NULL |
+|             7 | Fan Shop        | 2018-02-25 18:28:34 |   NULL |
+|            10 | gyshics         | 2018-02-25 18:28:34 |   NULL |
+|            11 | chemistry       | 2018-02-25 18:28:34 |   NULL |
+|            12 | math            | 2018-02-25 18:28:34 |   NULL |
+|            13 | science         | 2018-02-25 18:28:34 |   NULL |
+|            14 | engineering     | 2018-02-25 18:28:34 |   NULL |
+|           111 | NULL            | 2018-02-25 18:37:14 |   NULL |
+|           113 | Pharma          | 2018-02-25 18:37:14 |   NULL |
+|           114 | NULL            | 2018-02-25 18:37:16 |   NULL |
++---------------+-----------------+---------------------+--------+
+14 rows in set (0.00 sec)
+
+Now that all records have a non-null department_id that will be used in --check-column, hopefully the dep_id will all be replaced by 999
+
+
+sqoop import -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_export \
+--username=retail_user \
+--password=itversity \
+--table=departments_new1 \
+--null-string "TBD" \
+--null-non-string 999 \
+--check-column "department_id" \
+--incremental append 
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*                                                   2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+10,gyshics,2018-02-25 18:28:34.0
+11,chemistry,2018-02-25 18:28:34.0
+12,math,2018-02-25 18:28:34.0
+13,science,2018-02-25 18:28:34.0
+14,engineering,2018-02-25 18:28:34.0
+111,TBD,2018-02-25 18:37:14.0
+113,Pharma,2018-02-25 18:37:14.0
+114,TBD,2018-02-25 18:37:16.0
+2,Fitness,2018-02-25 18:28:34.0,999
+3,Footwear,2018-02-25 18:28:34.0,999
+4,Apparel,2018-02-25 18:28:34.0,999
+5,Golf,2018-02-25 18:28:34.0,999
+6,Outdoors,2018-02-25 18:28:34.0,999
+7,Fan Shop,2018-02-25 18:28:34.0,999
+10,gyshics,2018-02-25 18:28:34.0,999
+11,chemistry,2018-02-25 18:28:34.0,999
+12,math,2018-02-25 18:28:34.0,999
+13,science,2018-02-25 18:28:34.0,999
+14,engineering,2018-02-25 18:28:34.0,999
+111,TBD,2018-02-25 18:37:14.0,999
+113,Pharma,2018-02-25 18:37:14.0,999
+114,TBD,2018-02-25 18:37:16.0,999
+
+
+Now let's test the incremental append, which should only append new records
+
+In mysql, add two new duplicate rows:
+
+Insert into departments_new1 values(113, "Pharma" , null); 
+Insert into departments_new1 values(114, null , null);
+
+mysql> select * from departments_new1;
++---------------+-----------------+---------------------+--------+
+| department_id | department_name | created_date        | dep_id |
++---------------+-----------------+---------------------+--------+
+|             2 | Fitness         | 2018-02-25 18:28:34 |   NULL |
+|             3 | Footwear        | 2018-02-25 18:28:34 |   NULL |
+|             4 | Apparel         | 2018-02-25 18:28:34 |   NULL |
+|             5 | Golf            | 2018-02-25 18:28:34 |   NULL |
+|             6 | Outdoors        | 2018-02-25 18:28:34 |   NULL |
+|             7 | Fan Shop        | 2018-02-25 18:28:34 |   NULL |
+|            10 | gyshics         | 2018-02-25 18:28:34 |   NULL |
+|            11 | chemistry       | 2018-02-25 18:28:34 |   NULL |
+|            12 | math            | 2018-02-25 18:28:34 |   NULL |
+|            13 | science         | 2018-02-25 18:28:34 |   NULL |
+|            14 | engineering     | 2018-02-25 18:28:34 |   NULL |
+|           111 | NULL            | 2018-02-25 18:37:14 |   NULL |
+|           113 | Pharma          | 2018-02-25 18:37:14 |   NULL |
+|           114 | NULL            | 2018-02-25 18:37:16 |   NULL |
+|           113 | Pharma          | 2018-02-25 19:02:48 |   NULL |
+|           114 | NULL            | 2018-02-25 19:02:54 |   NULL |
++---------------+-----------------+---------------------+--------+
+16 rows in set (0.00 sec)
+
+Now run the import:
+
+sqoop import -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_export \
+--username=retail_user \
+--password=itversity \
+--table=departments_new1 \
+--null-string "TBD" \
+--null-non-string 999 \
+--check-column "department_id" \
+--incremental append 
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat departments_new1/*                                                   2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+2,Fitness,2018-02-25 18:28:34.0
+3,Footwear,2018-02-25 18:28:34.0
+4,Apparel,2018-02-25 18:28:34.0
+5,Golf,2018-02-25 18:28:34.0
+6,Outdoors,2018-02-25 18:28:34.0
+7,Fan Shop,2018-02-25 18:28:34.0
+10,gyshics,2018-02-25 18:28:34.0
+11,chemistry,2018-02-25 18:28:34.0
+12,math,2018-02-25 18:28:34.0
+13,science,2018-02-25 18:28:34.0
+14,engineering,2018-02-25 18:28:34.0
+111,TBD,2018-02-25 18:37:14.0
+113,Pharma,2018-02-25 18:37:14.0
+114,TBD,2018-02-25 18:37:16.0
+2,Fitness,2018-02-25 18:28:34.0,999
+3,Footwear,2018-02-25 18:28:34.0,999
+4,Apparel,2018-02-25 18:28:34.0,999
+5,Golf,2018-02-25 18:28:34.0,999
+6,Outdoors,2018-02-25 18:28:34.0,999
+7,Fan Shop,2018-02-25 18:28:34.0,999
+10,gyshics,2018-02-25 18:28:34.0,999
+11,chemistry,2018-02-25 18:28:34.0,999
+12,math,2018-02-25 18:28:34.0,999
+13,science,2018-02-25 18:28:34.0,999
+14,engineering,2018-02-25 18:28:34.0,999
+111,TBD,2018-02-25 18:37:14.0,999
+113,Pharma,2018-02-25 18:37:14.0,999
+114,TBD,2018-02-25 18:37:16.0,999
+2,Fitness,2018-02-25 18:28:34.0,999
+3,Footwear,2018-02-25 18:28:34.0,999
+4,Apparel,2018-02-25 18:28:34.0,999
+5,Golf,2018-02-25 18:28:34.0,999
+6,Outdoors,2018-02-25 18:28:34.0,999
+7,Fan Shop,2018-02-25 18:28:34.0,999
+10,gyshics,2018-02-25 18:28:34.0,999
+11,chemistry,2018-02-25 18:28:34.0,999
+12,math,2018-02-25 18:28:34.0,999
+13,science,2018-02-25 18:28:34.0,999
+14,engineering,2018-02-25 18:28:34.0,999
+111,TBD,2018-02-25 18:37:14.0,999
+113,Pharma,2018-02-25 18:37:14.0,999
+114,TBD,2018-02-25 18:37:16.0,999
+113,Pharma,2018-02-25 19:02:48.0,999
+114,TBD,2018-02-25 19:02:54.0,999
+

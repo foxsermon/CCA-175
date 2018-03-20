@@ -1,0 +1,167 @@
+Problem Scenario 5 : You have been given following mysql database details. 
+user=retail_dba 
+password=cloudera 
+database=retail_db 
+jdbc URL = jdbc:mysql://quickstart:3306/retail_db 
+
+Please accomplish following activities. 
+1. List all the tables using sqoop command from retail_db 
+
+
+sqoop list-tables \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity 
+
+categories
+customers
+departments
+order_items
+order_items_nopk
+orders
+products
+[paslechoix@gw03 ~]$
+
+sqoop list-tables \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+
+categories
+customers
+departments
+order_items
+order_items_nopk
+orders
+products
+
+
+2. Write simple sqoop eval command to check whether you have permission to read database tables or not. 
+
+sqoop eval \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--query "select count(1) from products" 
+
+------------------------
+| count(1)             |
+------------------------
+| 1345                 |
+------------------------
+
+sqoop eval \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--query "select count(1) from customers"
+
+------------------------
+| count(1)             |
+------------------------
+| 12435                |
+------------------------
+
+
+3. Import all the tables as avro files in /user/hive/warehouse/paslechoix 
+
+sqoop import-all-tables  \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--warehouse-dir=/user/hive/warehouse/paslechoix2 \
+--as-avrodatafile
+
+sqoop import-all-tables -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--warehouse-dir=/user/hive/warehouse/paslechoix_avro \
+--as-avrodatafile
+
+sqoop import-all-tables  \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--warehouse-dir=/user/hive/warehouse/paslechoix2_text \
+--as-textfile   
+
+[paslechoix@gw03 ~]$ hdfs dfs -ls /user/hive/warehouse/paslechoix2_text
+Found 4 items
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-24 09:49 /user/hive/warehouse/paslechoix2_text/categories
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-24 09:49 /user/hive/warehouse/paslechoix2_text/customers
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-24 09:50 /user/hive/warehouse/paslechoix2_text/departments
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-24 09:51 /user/hive/warehouse/paslechoix2_text/order_items
+
+
+because some tables do not have int id for splitting to default 4 mappers, so -m 1 must be speficied in order to do the MapReduce in sqoop
+
+
+sqoop import-all-tables -m 1 \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--warehouse-dir=/user/hive/warehouse/paslechoix_txt \
+--as-textfile
+
+[paslechoix@gw03 ~]$ hdfs dfs -ls /user/hive/warehouse/paslechoix_txt
+Found 7 items
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:27 /user/hive/warehouse/paslechoix_txt/categories
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:28 /user/hive/warehouse/paslechoix_txt/customers
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:30 /user/hive/warehouse/paslechoix_txt/departments
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:31 /user/hive/warehouse/paslechoix_txt/order_items
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:32 /user/hive/warehouse/paslechoix_txt/order_items_nopk
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:33 /user/hive/warehouse/paslechoix_txt/orders
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-02-19 15:34 /user/hive/warehouse/paslechoix_txt/products
+
+[paslechoix@gw03 ~]$ hdfs dfs -cat /user/hive/warehouse/paslechoix_txt/categories/*
+1,2,Football
+2,2,Soccer
+3,2,Baseball & Softball
+4,2,Basketball
+5,2,Lacrosse
+6,2,Tennis & Racquet
+7,2,Hockey
+8,2,More Sports
+9,3,Cardio Equipment
+
+hdfs dfs -ls /user/hive/warehouse/paslechoix
+[paslechoix@gw01 ~]$ hdfs dfs -ls /user/hive/warehouse/paslechoix
+Found 4 items
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-01-31 07:18 /user/hive/warehouse/paslechoix/categories
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-01-31 07:19 /user/hive/warehouse/paslechoix/departments
+drwxr-xr-x   - paslechoix hadoopthoughtworks          0 2018-01-31 07:20 /user/hive/warehouse/paslechoix/order_items
+
+[paslechoix@gw01 ~]$ hdfs dfs -ls /user/hive/warehouse/paslechoix/customers
+Found 5 items
+-rw-r--r--   3 paslechoix hadoopthoughtworks          0 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers/_SUCCESS
+-rw-r--r--   3 paslechoix hadoopthoughtworks     258086 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers/part-m-00000.avro
+-rw-r--r--   3 paslechoix hadoopthoughtworks     257862 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers/part-m-00001.avro
+-rw-r--r--   3 paslechoix hadoopthoughtworks     259118 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers/part-m-00002.avro
+-rw-r--r--   3 paslechoix hadoopthoughtworks     260893 2018-01-31 07:19 /user/hive/warehouse/paslechoix/customers/part-m-00003.avro
+
+
+4. Import departments table as a text tile in /user/hive/warehouse/paslechoix/departments_as_txt.  
+
+sqoop import-all-tables -m 1 \
+--connect jdbc:mysql://ms.itversity.com \
+--username=retail_user \
+--password=itversity \
+
+sqoop import  \
+--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+--username=retail_user \
+--password=itversity \
+--table=departments \
+--warehouse-dir=/user/hive/warehouse/paslechoix/departments_as_txt2 \
+--as-textfile
+
+[paslechoix@gw01 ~]$ hdfs dfs -cat /user/hive/warehouse/paslechoix/departments_as_txt/departments/*
+2,Fitness
+3,Footwear
+4,Apparel
+5,Golf
+6,Outdoors
+7,Fan Shop
+

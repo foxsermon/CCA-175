@@ -1,0 +1,200 @@
+Problem Scenario 6 : You have been given following mysql database details as well as other info. 
+user=retail_dba 
+password=cloudera 
+database=retail_db 
+jdbc URL = jdbc:mysql://quickstart:3306/retail_db 
+Compression Codec : org.apache.hadoop.io.compress.SnappyCodec 
+Please accomplish following. 
+1. Import entire database such that it can be used as a hive tables, it must be created in default schema. 
+2. Also make sure each tables file is partitioned in 3 files e.g. part-00001, part-00002, part-00003 
+3. Store all the java files in a directory called java_output to evaluate the further 
+
+
+
+Available codec can be found at /etc/hadoop/conf/coresite.xml
+
+    <property>
+      <name>io.compression.codecs</name>
+      <value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.SnappyCodec</value>
+    </property>
+
+
+1. Clean up previous work
+
+drop table ....
+drop database ....
+
+2. 
+
+sqoop import-all-tables -m 3 \
+--connect jdbc:mysql://ms.itverstiy.com/retail_db \
+--username=retail_user \
+--password=itversity \
+--hive-import \
+--hive-database paslechoix2 \
+--create-hive-table \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_code
+
+
+Data source on mysql: 7 tables
+
+mysql> show tables;
++---------------------+
+| Tables_in_retail_db |
++---------------------+
+| categories          |
+| customers           |
+| departments         |
+| order_items         |
+| order_items_nopk    |
+| orders              |
+| products            |
++---------------------+
+
+Because sqoop import create data on hdfs, so it must ensure that the location has no existing folders, for example, if no --warehouse-dir=paslechoix2 then it will error out because there is an existing folder on the default location
+
+sqoop import-all-tables -m 3 \
+--connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+--username=retail_user \
+--password=itversity \
+--hive-import \
+--hive-database paslechoix2 \
+--create-hive-table \
+--warehouse-dir=paslechoix2 \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_output
+
+After the import-all-tables, 4 tables are imported into hive database 
+
+hive (paslechoix2)> show tables;
+OK
+categories
+customers
+departments
+order_items
+Time taken: 0.085 seconds, Fetched: 4 row(s)
+hive (paslechoix2)>
+
+Reason:
+for all the 7 tables in the mysql database, only order_items_nopk has no primary key, which makes the import failed because the command indicates 3 mappers, with no primary key in place the mapreduce doesn't know how to split data
+
+Resolution:
+drop off the testing table order_items_nopk and try again in a different hive location and hive database
+Because no privilege on the database, this has to be manually import the other tables: orders and products;
+
+
+sqoop import -m 3 \
+--connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+--username=retail_user \
+--password=itversity \
+--table=orders \
+--hive-import \
+--hive-database paslechoix2 \
+--create-hive-table \
+--warehouse-dir=paslechoix2 \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_output
+
+
+hive (paslechoix2)> show tables;
+OK
+categories
+customers
+departments
+order_items
+orders
+Time taken: 0.032 seconds, Fetched: 5 row(s)
+
+
+sqoop import -m 3 \
+--connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+--username=retail_user \
+--password=itversity \
+--table=products \
+--hive-import \
+--hive-database paslechoix2 \
+--create-hive-table \
+--warehouse-dir=paslechoix2 \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_output
+
+hive (paslechoix2)> show tables;
+OK
+categories
+customers
+departments
+order_items
+orders
+products
+Time taken: 0.02 seconds, Fetched: 6 row(s)
+
+
+sqoop import-all-tables -m 3 \
+--connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+--username=retail_user \
+--password=itversity \
+--hive-import \
+--hive-database paslechoix1 \
+--create-hive-table \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_output
+
+hive (paslechoix1)> show tables;
+OK
+categories
+customers
+departments
+Time taken: 0.13 seconds, Fetched: 3 row(s)
+hive (paslechoix1)>
+
+
+sqoop import-all-tables -m 3 \
+--connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+--username=retail_user \
+--password=itversity \
+--hive-import \
+--hive-home /apps/hive/warehouse \
+--hive-database paslechoix \
+--create-hive-table \
+--compress \
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+--outdir java_output
+
+hive (paslechoix)> show tables;
+OK
+categories
+customers
+departments
+order_items
+
+[paslechoix@gw01 ~]$ hdfs dfs -ls /apps/hive/warehouse/paslechoix.db
+Found 4 items
+drwxrwxrwx   - paslechoix hdfs          0 2018-01-31 13:35 /apps/hive/warehouse/paslechoix.db/categories
+drwxrwxrwx   - paslechoix hdfs          0 2018-01-31 13:36 /apps/hive/warehouse/paslechoix.db/customers
+drwxrwxrwx   - paslechoix hdfs          0 2018-01-31 13:37 /apps/hive/warehouse/paslechoix.db/departments
+drwxrwxrwx   - paslechoix hdfs          0 2018-01-31 13:37 /apps/hive/warehouse/paslechoix.db/order_items
+
+[paslechoix@gw01 ~]$ hdfs dfs -ls /apps/hive/warehouse/paslechoix.db/customers
+Found 3 items
+-rwxrwxrwx   3 paslechoix hdfs     137665 2018-01-31 13:36 /apps/hive/warehouse/paslechoix.db/customers/part-m-00000.snappy
+-rwxrwxrwx   3 paslechoix hdfs     137323 2018-01-31 13:36 /apps/hive/warehouse/paslechoix.db/customers/part-m-00001.snappy
+-rwxrwxrwx   3 paslechoix hdfs     137239 2018-01-31 13:36 /apps/hive/warehouse/paslechoix.db/customers/part-m-00002.snappy
+
+[paslechoix@gw01 ~]$ cd java_output/
+[paslechoix@gw01 java_output]$ ls
+categories.java  customers.java  departments.java  order_items.java  order_items_nopk.java
+[paslechoix@gw01 java_output]$ ll
+total 104
+-rw-r--r-- 1 paslechoix students 14122 Jan 31 13:32 categories.java
+-rw-r--r-- 1 paslechoix students 27624 Jan 31 13:35 customers.java
+-rw-r--r-- 1 paslechoix students 11571 Jan 31 13:36 departments.java
+-rw-r--r-- 1 paslechoix students 22553 Jan 31 13:37 order_items.java
+-rw-r--r-- 1 paslechoix students 22643 Jan 31 13:37 order_items_nopk.java
+
+
