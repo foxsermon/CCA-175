@@ -217,11 +217,54 @@ sqoop import \
 ****************************************************************************************************************************************
 ****************************************************************************************************************************************
 
+PROBLEM 3
 
+sqoop import-all-tables \
+  --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
+  --username retail_user \
+  --password itversity \
+  --exclude-tables order_items_nopk \
+  --warehouse-dir /user/foxsermon/problem3/warehouse/retail_stage.db \
+  --compress \
+  --compression-codec snappy \
+  --as-avrodatafile \
+  --num-mappers 1
+
+hadoop fs -get /user/foxsermon/problem3/warehouse/retail_stage.db/orders/part-m-00000.avro
+avro-tools getschema part-m-00000.avro > orders.avsc
+hadoop fs -mkdir /user/foxsermon/problem3/schemas
+hadoop fs -ls /user/foxsermon/problem3/schemas/order
+hadoop fs -copyFromLocal orders.avsc /user/foxsermon/problem3/schemas/order
+
+hive> CREATE DATABASE foxsermondb;
+
+create external table orders_sqoop
+STORED AS AVRO
+LOCATION '/user/foxsermon/problem3/warehouse/retail_stage.db/orders'
+TBLPROPERTIES ('avro.schema.url'='/user/foxsermon/problem3/schemas/order/orders.avsc');
+
+
+select * from orders_sqoop as X 
+ where X.order_date in 
+ (
+   select order_date 
+    from 
+       (
+         select Y.order_date, count(1) as total_orders 
+           from orders_sqoop as Y 
+          group by Y.order_date 
+          order by total_orders desc, Y.order_date desc limit 1
+        ) 
+  );
+
+select * from orders_sqoop as X where X.order_date in (select dentro.order_date from (select Y.order_date, count(1) as total_orders from orders_sqoop as Y group by Y.order_date order by total_orders desc, Y.order_date desc limit 1) as dentro);
 ****************************************************************************************************************************************
 ****************************************************************************************************************************************
 
-
+TIPS
+Pay a lot of attention to the requirements for the output for each problem like output location, 
+file format, required transformation on fields, field delimiters, compression etc. 
+Any deviation from these can result in the problem getting marked as incorrect.
 ****************************************************************************************************************************************
 ****************************************************************************************************************************************
 
