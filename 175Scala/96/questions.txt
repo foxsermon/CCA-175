@@ -74,7 +74,8 @@ mysql>
 
 By running the following sqoop import-all-tables, presumably I should have all the 7 tables imported to hive:
 
-sqoop import-all-tables -m 3 \
+sqoop import-all-tables -Dorg.apache.sqoop.splitter.allow_text_splitter=true \
+-m 1 \
 --connect "jdbc:mysql://ms.itversity.com:3306/retail_db" \
 --username=retail_user \
 --password=itversity \
@@ -84,7 +85,10 @@ sqoop import-all-tables -m 3 \
 --create-hive-table \
 --compress \
 --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
---outdir java_output
+--outdir java_output \
+--input-null-non-string=0 \
+--input-null-string=''
+
 
 However, here is what I got on hive:
 hive (paslechoix)> show tables;

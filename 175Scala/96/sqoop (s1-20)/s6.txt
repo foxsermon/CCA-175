@@ -27,11 +27,11 @@ drop database ....
 2. 
 
 sqoop import-all-tables -m 3 \
---connect jdbc:mysql://ms.itverstiy.com/retail_db \
+--connect jdbc:mysql://ms.itversity.com/retail_db \
 --username=retail_user \
 --password=itversity \
 --hive-import \
---hive-database paslechoix2 \
+--hive-database paslechoix \
 --create-hive-table \
 --compress \
 --compression-codec org.apache.hadoop.io.compress.SnappyCodec \

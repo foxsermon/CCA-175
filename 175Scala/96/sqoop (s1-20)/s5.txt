@@ -65,21 +65,21 @@ sqoop eval \
 
 3. Import all the tables as avro files in /user/hive/warehouse/paslechoix 
 
-sqoop import-all-tables  \
+sqoop import-all-tables -Dmapreduce.job.user.classpath.first=true \
 --connect jdbc:mysql://ms.itversity.com/retail_db \
 --username=retail_user \
 --password=itversity \
 --warehouse-dir=/user/hive/warehouse/paslechoix2 \
 --as-avrodatafile
 
-sqoop import-all-tables -m 1 \
+sqoop import-all-tables -Dmapreduce.job.user.classpath.first=true -m 1 \
 --connect jdbc:mysql://ms.itversity.com/retail_db \
 --username=retail_user \
 --password=itversity \
 --warehouse-dir=/user/hive/warehouse/paslechoix_avro \
 --as-avrodatafile
 
-sqoop import-all-tables  \
+sqoop import-all-tables -Dmapreduce.job.user.classpath.first=true \
 --connect jdbc:mysql://ms.itversity.com/retail_db \
 --username=retail_user \
 --password=itversity \
