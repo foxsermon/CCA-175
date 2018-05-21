@@ -50,11 +50,38 @@ find total number of orders placed by custome rand his id,name(concatenated fnam
 
 import orders and customers table in directory /user/training/exam_practice_april/ as parquet with delimeter "," and lines-terminated by "\n"
 
-sqoop import --connect jdbc:mysql://localhost/retail_database --username root --table customers --target-dir /user/training/exam_practice_april/customers  -m 1 --fields-terminated-by "," --lines-terminated-by "\n" --delete-target-dir --as-parquetfile
+sqoop import --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+  --driver com.mysql.jdbc.Driver \
+  --username retail_user \
+  --password itversity \
+  --table customers \
+  --target-dir /user/training/exam_practice_april/customers \
+  -m 1 \
+  --fields-terminated-by "," \
+  --lines-terminated-by "\n" \
+  --delete-target-dir \
+  --as-parquetfile
 
-sqoop import --connect jdbc:mysql://localhost/retail_database --username root --table orders --target-dir /user/training/exam_practice_april/orders  -m 1 --fields-terminated-by "," --lines-terminated-by "\n" --delete-target-dir --as-parquetfile
+sqoop import --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+  --driver com.mysql.jdbc.Driver \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --target-dir /user/training/exam_practice_april/orders \
+  -m 1 \
+  --fields-terminated-by "," \
+  --lines-terminated-by "\n" \
+  --delete-target-dir \
+  --as-parquetfile
 
 
+%> cp spark-avro_2.11-4.0.0.jar /root/.ivy2/jars/
+%> cp spark-avro_2.11-4.0.0.jar /root/.m2/repository/com/databricks/spark-avro_2.11/4.0.0/
+
+%> spark-shell --packages com.databricks:spark-avro_2.11:4.0.0
+
+
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 var orders_df=sqlContext.read.parquet("/user/training/exam_practice_april/orders")
 var customers_df=sqlContext.read.parquet("/user/training/exam_practice_april/customers")
 
@@ -106,10 +133,28 @@ drop table cust_order_count;
 create table cust_order_count(customer_id int,total_order int,customer_name varchar(100));
 
 
-sqoop export --connect jdbc:mysql://localhost/customers --username root --table cust_order_count --input-fields-terminated-by "\t" --columns "customer_id,customer_name,total_order" -m 1 --export-dir /user/training/cust_ord_count_info/text
+sqoop export -Dmapreduce.job.user.classpath.first=true -Dhadoop.security.credential.provider.path=jceks://x.jceksor \
+  --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --table cust_order_count \
+  --input-fields-terminated-by "\t" \
+  --columns "customer_id,customer_name,total_order" \
+  -m 1 \
+  --export-dir /user/training/cust_ord_count_info/text
 
 ###export from avro file####3
-sqoop export --connect jdbc:mysql://localhost/customers --username root --table cust_order_count --input-fields-terminated-by "\t" --columns "customer_id,customer_name,total_order" -m 1 --export-dir /user/training/cust_ord_count_info/avro
+sqoop export -Dmapreduce.job.user.classpath.first=true -Dhadoop.security.credential.provider.path=jceks://x.jceksor \
+  --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --table cust_order_count \
+  --input-fields-terminated-by "\t" \
+  --columns "customer_id,customer_name,total_order" \
+  -m 1 \
+  --export-dir /user/training/cust_ord_count_info/avro
 
 
 
@@ -121,7 +166,7 @@ create database customer;
 use customer;
 
 
-sqoop import --connect jdbc:mysql://localhost/customers --username root --table cust_order_count --hive-import --create-hive-table --hive-database customer -m 1 --hive-overwrite --delete-target-dir
+sqoop import --connect jdbc:mysql://ms.itversity.com:3306/customers --username root --table cust_order_count --hive-import --create-hive-table --hive-database customer -m 1 --hive-overwrite --delete-target-dir
 
 
 
