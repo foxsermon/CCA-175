@@ -1,0 +1,59 @@
+
+SPHTX
+ZEN
+
+
+NUEVAS MONEDAS A COMPRAR 
+
+Mayo 3 2018							May 9 2018		May 11 2018
+
+CloakCoin  				$13.48			$13.23			$10.75
+SIRIN LABS Token 		$0.60			$0.53			$0.40
+Polymath			 	$0.76			$0.83			$0.85
+Request Network			$0.29			$0.24			$0.21
+Loom Network			$0.63			$0.58			$0.48
+ReddCoin				$0.01			$0.009			$0.007
+Nebulas					$11.69			$9.11			$8.07
+Decred					$83.67			$85.26			$86.93
+
+May 9 2018
+
+INSTAR									$0.096			$0.079
+
+
+(500/0.00002)*0.002867
+
+https://github.com/dgadiraju/code/blob/a01c909e382ae7da5077486536d58b677c24469f/hadoop/edw/hdp/sqoop/sqoop_demo.txt
+
+http://discuss.itversity.com/t/cca159-study-groop/8515/6
+http://discuss.itversity.com/c/big-data/workshop-exercises
+
+http://arun-teaches-u-tech.blogspot.in/p/cca-175-prep-problem-scenario-1.html
+
+https://sqoop.apache.org/docs/1.4.6/SqoopUserGuide.html
+
+https://blog.puneethabm.com/sqoop-queries-examples/
+
+https://www.supergloo.com/fieldnotes/apache-spark-transformations-python-examples/
+
+https://data-flair.training/blogs/create-spark-scala-project/
+
+http://www.devinline.com/2016/01/apache-spark-setup-in-eclipse-scala-ide.html
+
+http://www.itversity.com/topic/develop-spark-apps-with-scala-ide/
+
+
+
+select customer_id,
+	   concat(concat(customer_fname, ' '), customer_lname) customer_name,
+	   cast(count(distinct(order_id)) as int) as total_order,
+	   dense_rank() over( order by count(order_id) desc ) as dense_rank,
+	   rank() over( order by count(order_id) desc ) as rank 
+  from ord_cust 
+ group by customer_id, concat(concat(customer_fname, ' '), customer_lname) 
+ order by rank, dense_rank
+ limit 5
+
+
+
+ 

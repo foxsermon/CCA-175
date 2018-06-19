@@ -108,7 +108,9 @@ cust_df.show
 
 sqlContext.setConf("spark.sql.json.compression.codec","snappy")
 cust_df.write.json("/user/training/cust_ord/json")
+
 ##############################################################concatenate#######################
+
 var orders_df=sqlContext.read.parquet("/user/training/exam_practice_april/orders")
 var customers_df=sqlContext.read.parquet("/user/training/exam_practice_april/customers")
 
@@ -166,15 +168,26 @@ create database customer;
 use customer;
 
 
-sqoop import --connect jdbc:mysql://ms.itversity.com:3306/customers --username root --table cust_order_count --hive-import --create-hive-table --hive-database customer -m 1 --hive-overwrite --delete-target-dir
-
-
+sqoop import -Dmapreduce.job.user.classpath.first=true -Dhadoop.security.credential.provider.path=jceks://x.jceksor \
+  --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --table cust_order_count \
+  --hive-import \
+  --create-hive-table \
+  --hive-database customer \
+  -m 1 \
+  --hive-overwrite \
+  --delete-target-dir
 
 
 read the cust_order_count table in hive metastore customer and save the customer name and customer and total order count and save in ord and avro format.
-at destination /user/training/cust_meta/orc,/user/training/cust_meta/avro who name ends with Smith
+at destination /user/training/cust_meta/orc, /user/training/cust_meta/avro who name ends with Smith
 
+%> spark-shell --packages com.databricks:spark-avro_2.11:4.0.0
 
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 sqlContext.sql("use customer")
 var sqlresult=sqlContext.sql("select customer_id,customer_name,total_order from cust_order_count where customer_name like '%Smith'")
 sqlresult.show
@@ -186,17 +199,13 @@ sqlresult.write.avro("/user/training/cust_meta/avro")
 
 save as csv file.
 
-sqlresult.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv")
-
+sqlresult.rdd.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv")
 
 
 save as csv in snappy compressed format.
 
-
-sqlresult.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv/snappy",classOf[org.apache.hadoop.io.compress.SnappyCodec])
-sqlresult.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv/gzip",classOf[org.apache.hadoop.io.compress.GzipCodec])
-
-
+sqlresult.rdd.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv/snappy",classOf[org.apache.hadoop.io.compress.SnappyCodec])
+sqlresult.rdd.map(x=>x.mkString(",")).saveAsTextFile("/user/training/cust_meta/csv/gzip",classOf[org.apache.hadoop.io.compress.GzipCodec])
 
 
 --Find top five customer based on number of orders;
@@ -208,7 +217,7 @@ var ord_join=orders_df.join(customers_df,orders_df("order_customer_id")===custom
 
 ord_join.registerTempTable("ord_cust")
 
-var sqlresult=sqlContext.sql("select customer_id,concat(concat(customer_fname,' '),customer_lname) customer_name,cast(count(distinct(order_id)) as int )as total_order,dense_rank() over( order by count(order_id) desc ) as dense_rank,rank() over( order by count(order_id) desc ) as rank from ord_cust group by customer_id,concat(concat(customer_fname,' '),customer_lname) order  by rank,dense_rank  limit 5").show
+var sqlresult=sqlContext.sql("select customer_id,concat(concat(customer_fname,' '),customer_lname) customer_name,cast(count(distinct(order_id)) as int )as total_order,dense_rank() over( order by count(order_id) desc ) as dense_rank,rank() over( order by count(order_id) desc ) as rank from ord_cust group by customer_id,concat(concat(customer_fname,' '),customer_lname) order  by rank,dense_rank  limit 5")
 
 sqlresult.show
 
@@ -239,12 +248,37 @@ use  customers;
 drop table customer_export;
 create table customer_export(customer_name varchar(100),customer_id int,total_order int);
 
-sqoop eval --connect jdbc:mysql://localhost/customers --username root --query "drop table customer_export"
-sqoop eval --connect jdbc:mysql://localhost/customers --username root --query "create table customer_export(customer_name varchar(100),customer_id int,total_order int);"
+sqoop eval --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --query "drop table customer_export"
 
-sqoop export --connect jdbc:mysql://localhost/customers --username root --table customer_export --export-dir /user/hive/warehouse/customer.db/cust_order_count --columns "customer_id,total_order,customer_name" --input-fields-terminated-by "\001" -m 1
+sqoop eval --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --query "create table customer_export(customer_name varchar(100),customer_id int,total_order int);"
 
-sqoop eval --connect jdbc:mysql://localhost/customers --username root --query "select * from  customer_export limit 5"
+
+# /user/hive/warehouse/customer.db/cust_order_count
+
+sqoop export -Dmapreduce.job.user.classpath.first=true -Dhadoop.security.credential.provider.path=jceks://x.jceksor \
+  --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --table customer_export \
+  --export-dir /user/root/cust_order_count/ \
+  --columns "customer_id,total_order,customer_name" \
+  --input-fields-terminated-by "\001" \
+  -m 1
+
+sqoop eval --connect jdbc:mysql://ms.itversity.com:3306/customers \
+  --driver com.mysql.jdbc.Driver \
+  --username root \
+  --password hadoop \
+  --query "select * from  customer_export limit 5"
 
 
 check hive database from terminal using hive -e
@@ -253,7 +287,7 @@ hive -e "use customer;show tables;select * from cust_order_count_ext limit 5;"
 
 
 #######check the size of data directory to set num executors and executor-memory
-hdfs dfs -du  -h -s /user/training/data/retail_db/orders
+hdfs dfs -du -h -s /user/training/data/retail_db/orders
 
 
 by default execcutor-memory is 1gb and num-executors are 2...
